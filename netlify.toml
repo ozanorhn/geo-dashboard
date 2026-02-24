@@ -1,0 +1,17 @@
+[build]
+  command = "npx ng build"
+  publish = "dist/geo-ai-dashboard/browser"
+
+# 1. Proxy Supabase API — must be BEFORE the SPA catch-all
+#    Browser talks HTTPS to Netlify → Netlify proxies to HTTP server server-side.
+[[redirects]]
+  from  = "/api/supabase/*"
+  to    = "http://91.99.96.232:8000/:splat"
+  status = 200
+  force  = true
+
+# 2. SPA fallback — send every other non-asset route to index.html
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200

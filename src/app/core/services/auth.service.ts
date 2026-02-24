@@ -3,7 +3,16 @@ import { createClient, SupabaseClient, Session } from '@supabase/supabase-js';
 import { Router } from '@angular/router';
 import { AuthState, LoginCredentials, SupabaseUser } from '../models/interfaces';
 
-const SUPABASE_URL     = 'http://91.99.96.232:8000';
+// On localhost: talk directly to the self-hosted Supabase server.
+// On Netlify (or any HTTPS host): use the /api/supabase proxy defined in netlify.toml
+// so the browser never makes an HTTP request from an HTTPS page (mixed content).
+const isLocalhost = typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+const SUPABASE_URL = isLocalhost
+  ? 'http://91.99.96.232:8000'
+  : (typeof window !== 'undefined' ? window.location.origin : '') + '/api/supabase';
+
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE';
 const TOKEN_KEY        = 'geo-auth-token';
 
