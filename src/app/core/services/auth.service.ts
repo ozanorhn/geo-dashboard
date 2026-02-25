@@ -74,8 +74,9 @@ export class AuthService {
       password: credentials.password,
     });
     if (error) {
-      this._state.update(s => ({ ...s, loading: false, error: error.message }));
-      throw error;
+      const msg = error.message || 'Unable to connect to the server. Please try again later.';
+      this._state.update(s => ({ ...s, loading: false, error: msg }));
+      throw new Error(msg);
     }
     await this.router.navigate(['/dashboard']);
   }

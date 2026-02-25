@@ -95,4 +95,17 @@ export class SupabaseDataService {
       catchError(() => of([])),
     );
   }
+
+  /** AI conversations — prompts + responses per LLM model */
+  fetchConversations(): Observable<AnyRow[]> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const query: any = this.auth.getClient()
+      .from('llm_data')
+      .select('*');
+
+    return from(query as unknown as Promise<SupabaseResult>).pipe(
+      map(({ data }) => data ?? []),
+      catchError(() => of([])),
+    );
+  }
 }

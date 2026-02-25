@@ -37,6 +37,16 @@ interface LlmRow {
   avgCitations: string;
 }
 
+interface ChatConversation {
+  id: string;
+  modelRaw: string;
+  model: string;
+  query: string;
+  response: string;
+  sourcesCount: number;
+  brandsCount: number;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -392,6 +402,133 @@ interface LlmRow {
             </div>
           }
 
+          <!-- ── AI Prompt Responses ── -->
+          @if (convUsageDisplay().length > 0) {
+            <div class="bg-white dark:bg-surface-card-dark rounded-xl
+                        border border-slate-200 dark:border-slate-700 p-5">
+
+              <!-- Card header -->
+              <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div class="flex items-baseline gap-2">
+                  <span class="text-sm font-semibold text-slate-800 dark:text-white">AI Prompt Responses</span>
+                  <span class="text-xs text-slate-400 dark:text-slate-500">
+                    · {{ convFiltered().length }} of {{ convUsageDisplay().length }} conversations
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  [value]="convSearch()"
+                  (input)="onConvSearch($any($event.target).value)"
+                  placeholder="Search query or response…"
+                  class="h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-700
+                         bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-200
+                         placeholder-slate-400 dark:placeholder-slate-500
+                         outline-none focus:ring-2 focus:ring-primary-400 dark:focus:ring-primary-600
+                         transition w-60">
+              </div>
+
+              <!-- Model filter -->
+              <div class="flex flex-wrap gap-1.5 mb-4">
+                @for (m of availableConvModels(); track m) {
+                  <button type="button"
+                    (click)="setConvModelFilter(m)"
+                    [class]="convModelFilter() === m
+                      ? 'badge text-xs font-semibold ring-1 ring-inset ' + (m === 'ALL' ? 'bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-800' : modelClass(m))
+                      : 'badge text-xs bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors'">
+                    {{ m === 'ALL' ? 'All models' : m }}
+                  </button>
+                }
+              </div>
+
+              <!-- Conversation rows -->
+              <div class="space-y-1.5">
+                @for (conv of convFiltered(); track $index) {
+                  <div class="border border-slate-100 dark:border-slate-700/60 rounded-xl overflow-hidden">
+
+                    <!-- Row header — always visible, click to expand -->
+                    <button type="button"
+                      (click)="toggleConv(conv.id)"
+                      class="w-full flex items-start gap-3 p-3.5 text-left
+                             hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                      <!-- Model badge -->
+                      <span [class]="'badge text-xs font-medium shrink-0 mt-0.5 ' + modelClass(conv.model)">
+                        {{ conv.model || '—' }}
+                      </span>
+                      <!-- Query -->
+                      <span class="flex-1 text-sm text-slate-700 dark:text-slate-200 line-clamp-1">
+                        {{ conv.query || '(no query)' }}
+                      </span>
+                      <!-- Stats + chevron -->
+                      <div class="flex items-center gap-2.5 shrink-0 text-xs">
+                        @if (conv.sourcesCount > 0) {
+                          <span class="text-slate-400 dark:text-slate-500">
+                            {{ conv.sourcesCount }} src
+                          </span>
+                        }
+                        @if (conv.brandsCount > 0) {
+                          <span class="text-emerald-600 dark:text-emerald-400 font-medium">
+                            {{ conv.brandsCount }} brands
+                          </span>
+                        }
+                        <svg class="w-4 h-4 text-slate-400 dark:text-slate-500 transition-transform duration-200"
+                             [class.rotate-180]="expandedConvId() === conv.id"
+                             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                      </div>
+                    </button>
+
+                    <!-- Expanded body -->
+                    @if (expandedConvId() === conv.id) {
+                      <div class="border-t border-slate-100 dark:border-slate-700/60 p-4 space-y-4
+                                  bg-slate-50/50 dark:bg-slate-800/20">
+
+                        <!-- AI Response -->
+                        <div>
+                          <p class="text-[10px] font-semibold text-slate-400 dark:text-slate-500
+                                    uppercase tracking-widest mb-2">Response</p>
+                          <div class="max-h-56 overflow-y-auto rounded-lg
+                                      bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700
+                                      p-3.5 text-sm text-slate-600 dark:text-slate-300
+                                      leading-relaxed whitespace-pre-wrap">
+                            {{ conv.response || '—' }}
+                          </div>
+                        </div>
+
+                        <!-- Stats row -->
+                        @if (conv.sourcesCount > 0 || conv.brandsCount > 0) {
+                          <div class="flex flex-wrap gap-2">
+                            @if (conv.sourcesCount > 0) {
+                              <span class="badge text-xs bg-slate-100 dark:bg-slate-700
+                                           text-slate-600 dark:text-slate-300">
+                                {{ conv.sourcesCount }} cited sources
+                              </span>
+                            }
+                            @if (conv.brandsCount > 0) {
+                              <span class="badge text-xs bg-emerald-50 dark:bg-emerald-900/20
+                                           text-emerald-700 dark:text-emerald-400">
+                                {{ conv.brandsCount }} brands mentioned
+                              </span>
+                            }
+                          </div>
+                        }
+
+                      </div>
+                    }
+
+                  </div>
+                }
+
+                @if (convFiltered().length === 0) {
+                  <div class="py-10 text-center text-slate-400 dark:text-slate-500 text-sm">
+                    No conversations match your filter
+                  </div>
+                }
+              </div>
+
+            </div>
+          }
+
         }
       </main>
     </div>
@@ -410,6 +547,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   rawData       = signal<VisibilityData[]>([]);
   aiUrls        = signal<GenericRow[]>([]);
   llmUsage      = signal<GenericRow[]>([]);
+  conversations = signal<GenericRow[]>([]);
   granularity   = signal<'D' | 'W' | 'M'>('D');
   currentFilter = signal<FilterState>({
     dateFrom:    new Date(Date.now() - 30 * 86_400_000).toISOString().split('T')[0],
@@ -613,6 +751,41 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return this.llmFiltered().slice(start, start + this.LLM_PAGE_SIZE);
   });
 
+  // ── Derived: AI Conversations ──────────────────
+  convSearch      = signal('');
+  convModelFilter = signal('ALL');
+  expandedConvId  = signal<string | null>(null);
+
+  convUsageDisplay = computed<ChatConversation[]>(() =>
+    this.conversations().map(r => {
+      // Flat columns: chat_id, model_id, user_message, assistant_message, sources_count, brands_count
+      const modelId = String(r['model_id'] ?? r['model'] ?? '');
+      return {
+        id:           String(r['chat_id'] ?? r['idx'] ?? ''),
+        modelRaw:     modelId,
+        model:        this.prettifyModel(modelId),
+        query:        String(r['user_message'] ?? r['query'] ?? '').trim(),
+        response:     String(r['assistant_message'] ?? r['response'] ?? '').trim(),
+        sourcesCount: Number(r['sources_count'] ?? 0),
+        brandsCount:  Number(r['brands_count'] ?? 0),
+      };
+    })
+  );
+
+  availableConvModels = computed<string[]>(() => {
+    const models = new Set(this.convUsageDisplay().map(c => c.model).filter(Boolean));
+    return ['ALL', ...Array.from(models).sort()];
+  });
+
+  convFiltered = computed<ChatConversation[]>(() => {
+    const q = this.convSearch().trim().toLowerCase();
+    const m = this.convModelFilter();
+    return this.convUsageDisplay().filter(c =>
+      (m === 'ALL' || c.model === m) &&
+      (!q || c.query.toLowerCase().includes(q) || c.response.toLowerCase().includes(q))
+    );
+  });
+
   // ── Lifecycle ──────────────────────────────────
   ngOnInit(): void {
     this.load();
@@ -626,14 +799,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private load(): void {
     this.isLoading.set(true);
     forkJoin({
-      main:     this.api.fetchData(this.currentFilter()),
-      aiUrls:   this.supabaseData.fetchAiUrls(),
-      llmUsage: this.supabaseData.fetchLlmUsage(),
+      main:          this.api.fetchData(this.currentFilter()),
+      aiUrls:        this.supabaseData.fetchAiUrls(),
+      llmUsage:      this.supabaseData.fetchLlmUsage(),
+      conversations: this.supabaseData.fetchConversations(),
     }).pipe(takeUntil(this.destroy$)).subscribe({
-      next: ({ main, aiUrls, llmUsage }) => {
+      next: ({ main, aiUrls, llmUsage, conversations }) => {
         this.rawData.set(main);
         this.aiUrls.set(aiUrls);
         this.llmUsage.set(llmUsage);
+        this.conversations.set(conversations);
         this.isLoading.set(false);
       },
       error: () => this.isLoading.set(false),
@@ -690,6 +865,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   prevLlmPage(): void             { this.llmPage.update(p => Math.max(1, p - 1)); }
   nextLlmPage(): void             { this.llmPage.update(p => Math.min(this.llmTotalPages(), p + 1)); }
   llmMin(a: number, b: number): number { return Math.min(a, b); }
+
+  // ── Conversation helpers ────────────────────────
+  toggleConv(id: string): void {
+    this.expandedConvId.update(curr => curr === id ? null : id);
+  }
+  onConvSearch(q: string): void        { this.convSearch.set(q); }
+  setConvModelFilter(m: string): void  { this.convModelFilter.set(m); }
 
   private prettifyModel(raw: string): string {
     const MAP: Record<string, string> = {
